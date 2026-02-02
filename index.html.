@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ISBN Scanner</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="bg-emerald-500">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    function App() {
+      const [isbn, setIsbn] = useState('');
+      const [scanning, setScanning] = useState(false);
+      const [showRes, setShowRes] = useState(false);
+      const scannerRef = useRef(null);
+
+      const platforms = [
+        { name: 'Subito.it', icon: '🇮🇹', color: 'bg-red-500', url: (i) => `https://www.subito.it/annunci-italia/vendita/libri-riviste/?q=${i}` },
+        { name: 'eBay.it', icon: '🛒', color: 'bg-blue-600', url: (i) => `https://www.ebay.it/sch/i.html?_nkw=${i}` },
+        { name: 'Amazon', icon: '📦', color: 'bg-orange-500', url: (i) => `https://www.amazon.it/s?k=${i}&i=stripbooks` },
+        { name: 'Libraccio', icon: '📚', color: 'bg-green-600', url: (i) => `https://www.libraccio.it/ricerca/?search=${i}` },
+        { name: 'AbeBooks', icon: '🌍', color: 'bg-purple-600', url: (i) => `https://www.abebooks.it/servlet/SearchResults?isbn=${i}` },
+        { name: 'IBS', icon: '📖', color: 'bg-indigo-600', url: (i) => `https://www.ibs.it/search/?query=${i}` },
+        { name: 'Vinted', icon: '👕', color: 'bg-teal-500', url: (i) => `https://www.vinted.it/catalog?search_text=${i}` },
+        { name: 'BookFinder', icon: '🔍', color: 'bg-yellow-600', url: (i) => `https://www.bookfinder.com/search/?isbn=${i}` }
+      ];
+
+      const startScan = () => {
+        setScanning(true);
+        setTimeout(() => {
+          const scanner = new Html5Qrcode("reader");
+          scannerRef.current = scanner;
+          scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+            setIsbn(txt); setScanning(false); setShowRes(true); scanner.stop();
+          }, () => {});
+        }, 150);
+      };
+
+      return (
+        <div className="min-h-screen p-4 safe-top">
+          <div className="max-w-md mx-auto bg-white rounded-3xl p-6 shadow-2xl">
+            <h1 className="text-2xl font-bold text-center mb-6 text-emerald-600">📚 ISBN Finder</h1>
+            {!showRes ? (
+              <>
+                {scanning ? <div id="reader" className="w-full rounded-xl overflow-hidden"></div> : 
+                <button onClick={startScan} className="w-full bg-emerald-600 text-white py-8 rounded-2xl font-bold mb-4 shadow-lg active:scale-95 transition">📷 APRI SCANNER</button>}
+                <input type="tel" value={isbn} onChange={e => setIsbn(e.target.value)} placeholder="O inserisci ISBN..." className="w-full p-4 border-2 rounded-xl mb-4 text-center text-xl font-mono focus:border-emerald-500 outline-none"/>
+                <button onClick={() => setShowRes(true)} className="w-full bg-slate-800 text-white p-4 rounded-xl font-bold shadow-md">CERCA SUI SITI</button>
+              </>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 animate-slide-up">
+                <div className="col-span-2 bg-emerald-50 p-4 rounded-xl text-center font-mono font-bold text-emerald-700 text-lg">{isbn}</div>
+                {platforms.map(p => (
+                  <button key={p.name} onClick={() => window.open(p.url(isbn.replace(/[-\s]/g, '')), '_blank')} className={`${p.color} text-white p-4 rounded-xl text-sm font-bold shadow active:scale-95 transition`}>
+                    <div className="text-2xl mb-1">{p.icon}</div> {p.name}
+                  </button>
+                ))}
+                <button onClick={() => {setShowRes(false); setIsbn('');}} className="col-span-2 mt-6 bg-gray-100 text-gray-500 py-3 rounded-xl font-bold">🔄 Nuova Ricerca</button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
